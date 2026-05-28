@@ -4,6 +4,7 @@ use soroban_sdk::{
     Bytes, BytesN, Env, Symbol, Address,
     vec,
 };
+use soroban_sdk::{contract, contractimpl, contracttype, contracterror, Bytes, Env, Symbol, Address};
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -27,11 +28,30 @@ pub enum Error {
     TeeNotVerified        = 7,
     UnauthorizedSigner    = 8,
     ProviderNotRegistered = 9,
+    AlreadyInitialized = 1,
+    NotInitialized     = 2,
+    NotFound           = 3,
 }
 
 // ---------------------------------------------------------------------------
 // Storage keys
 // ---------------------------------------------------------------------------
+
+#[contracttype]
+pub enum DataKey {
+    Registry,
+    Provenance,
+    Admin,
+    Provider(Address),
+    NextRequestId,
+    Request(u64),
+}
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+#[contracttype]
 
 #[contracttype]
 pub enum DataKey {
@@ -62,6 +82,10 @@ pub struct VerificationRequest {
     pub content_hash: BytesN<32>,
     pub requester:    Address,
     pub state:        RequestState,
+    pub storage_ref:   Bytes,
+    pub manifest_hash: Bytes,
+    pub requester:     Address,
+    pub state:         RequestState,
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +101,7 @@ impl OracleContract {
     // Issue #1 — init
     // -----------------------------------------------------------------------
 
+    /// One-time initialisation. Stores registry, provenance, and admin addresses.
     pub fn init(
         env:        Env,
         registry:   Address,
@@ -128,10 +153,16 @@ impl OracleContract {
         env:          Env,
         storage_ref:  Bytes,
         content_hash: BytesN<32>,
+    /// Submit a new verification request. Returns the unique request ID.
+    pub fn submit_request(
+        env:          Env,
+        storage_ref:  Bytes,
+        manifest_hash: Bytes,
         requester:    Address,
     ) -> u64 {
         requester.require_auth();
 
+        // Monotonic counter
         let id: u64 = env.storage().instance()
             .get(&DataKey::NextRequestId)
             .unwrap_or(0u64)
@@ -141,6 +172,7 @@ impl OracleContract {
         let req = VerificationRequest {
             storage_ref,
             content_hash,
+            manifest_hash,
             requester,
             state: RequestState::Pending,
         };
@@ -151,6 +183,9 @@ impl OracleContract {
             REQUEST_TTL_LEDGERS,
             REQUEST_TTL_LEDGERS,
         );
+        // Temporary storage with TTL
+        env.storage().temporary().set(&DataKey::Request(id), &req);
+        env.storage().temporary().extend_ttl(&DataKey::Request(id), REQUEST_TTL_LEDGERS, REQUEST_TTL_LEDGERS);
 
         env.events().publish((Symbol::new(&env, "submitted"),), id);
         id
@@ -218,6 +253,10 @@ impl OracleContract {
 
         Ok(())
     }
+    /// Retrieve a verification request by ID.
+    pub fn get_request(env: Env, id: u64) -> Option<VerificationRequest> {
+        env.storage().temporary().get(&DataKey::Request(id))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +275,8 @@ mod tests {
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+    use soroban_sdk::{testutils::{Address as _}, Env, Bytes};
+    use soroban_sdk::testutils::storage::Temporary as TemporaryStorage;
 
     fn make_env() -> Env {
         Env::default()
@@ -309,6 +350,16 @@ mod tests {
         let env = make_env();
         let cid = register_oracle(&env);
         let client = OracleContractClient::new(&env, &cid);
+    fn register(env: &Env) -> soroban_sdk::Address {
+        env.register_contract(None, OracleContract)
+    }
+
+    // Issue #1 tests
+    #[test]
+    fn test_init() {
+        let env = make_env();
+        let contract_id = register(&env);
+        let client = OracleContractClient::new(&env, &contract_id);
 
         let registry   = Address::generate(&env);
         let provenance = Address::generate(&env);
@@ -316,6 +367,10 @@ mod tests {
 
         client.init(&registry, &provenance, &admin);
         assert!(client.try_init(&registry, &provenance, &admin).is_err());
+
+        // Second call must fail
+        let result = client.try_init(&registry, &provenance, &admin);
+        assert!(result.is_err());
     }
 
     #[test]
@@ -323,6 +378,8 @@ mod tests {
         let env = make_env();
         let cid = register_oracle(&env);
         let client = OracleContractClient::new(&env, &cid);
+        let contract_id = register(&env);
+        let client = OracleContractClient::new(&env, &contract_id);
 
         let registry   = Address::generate(&env);
         let provenance = Address::generate(&env);
@@ -399,6 +456,44 @@ mod tests {
         assert_eq!(client.get_request(&id).unwrap().state, RequestState::Pending);
 
         let ttl = env.as_contract(&cid, || {
+    // Issue #2 test
+    #[test]
+    fn test_submit_request_generates_unique_ids() {
+        let env = make_env();
+        env.mock_all_auths();
+        let contract_id = register(&env);
+        let client = OracleContractClient::new(&env, &contract_id);
+
+        let requester = Address::generate(&env);
+        let bytes     = Bytes::from_slice(&env, b"data");
+
+        let id1 = client.submit_request(&bytes, &bytes, &requester);
+        let id2 = client.submit_request(&bytes, &bytes, &requester);
+        let id3 = client.submit_request(&bytes, &bytes, &requester);
+
+        assert_eq!(id1, 1);
+        assert_eq!(id2, 2);
+        assert_eq!(id3, 3);
+    }
+
+    // Issue #3 test
+    #[test]
+    fn test_submit_request_stores_pending_in_temporary_storage() {
+        let env = make_env();
+        env.mock_all_auths();
+        let contract_id = register(&env);
+        let client = OracleContractClient::new(&env, &contract_id);
+
+        let requester = Address::generate(&env);
+        let bytes     = Bytes::from_slice(&env, b"ref");
+
+        let id = client.submit_request(&bytes, &bytes, &requester);
+
+        let req = client.get_request(&id).unwrap();
+        assert_eq!(req.state, RequestState::Pending);
+
+        // TTL should be positive
+        let ttl = env.as_contract(&contract_id, || {
             env.storage().temporary().get_ttl(&DataKey::Request(id))
         });
         assert!(ttl > 0);
@@ -408,6 +503,7 @@ mod tests {
     // Issue #4 / #8 tests
     // -----------------------------------------------------------------------
 
+    // Issue #4 test — RequestState enum and state field
     #[test]
     fn test_request_state_pending_on_submit() {
         let env = make_env();
@@ -551,5 +647,15 @@ mod tests {
         let signature = BytesN::from_array(&env, &sig.to_bytes());
 
         client.verify_attestation(&provider, &tee_hash, &payload, &signature);
+        let contract_id = register(&env);
+        let client = OracleContractClient::new(&env, &contract_id);
+
+        let requester = Address::generate(&env);
+        let bytes     = Bytes::from_slice(&env, b"manifest");
+
+        let id  = client.submit_request(&bytes, &bytes, &requester);
+        let req = client.get_request(&id).unwrap();
+
+        assert_eq!(req.state, RequestState::Pending);
     }
 }
