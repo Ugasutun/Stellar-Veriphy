@@ -20,6 +20,9 @@ importers:
       '@stellar/freighter-api':
         specifier: 6.0.1
         version: 6.0.1
+      geist:
+        specifier: ^1.7.1
+        version: 1.7.1(next@15.0.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       next:
         specifier: 15.0.0
         version: 15.0.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -399,6 +402,11 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
+
+  geist@1.7.1:
+    resolution: {integrity: sha512-XF8DM30ODhDu0Ng5S2kOS8j4ZkG/6z2fKWAiFJA7wG0Hc92ZXgjYLrwbD9bVU4nGVzwboPtG+QtaPGsfgnXLaA==}
+    peerDependencies:
+      next: '>=13.2.0'
 
   get-east-asian-width@1.6.0:
     resolution: {integrity: sha512-QRbvDIbx6YklUe6RxeTeleMR0yv3cYH6PsPZHcnVn7xv7zO1BHN8r0XETu8n6Ye3Q+ahtSarc3WgtNWmehIBfA==}
@@ -1067,6 +1075,10 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  geist@1.7.1(next@15.0.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
+    dependencies:
+      next: 15.0.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   get-east-asian-width@1.6.0: {}
 
