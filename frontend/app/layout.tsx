@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ToastProvider } from "@/app/context/ToastContext";
 import { ThemeProvider } from "@/app/context/ThemeContext";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -18,6 +19,9 @@ const themeInitScript = `(function(){try{var t=localStorage.getItem('theme')||(w
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    <html lang="en">
+      <body>
+        <ToastProvider>{children}</ToastProvider>
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
