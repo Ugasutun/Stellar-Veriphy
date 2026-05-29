@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WalletProvider } from "@/context/WalletContext";
 import { ToastProvider } from "@/app/context/ToastContext";
 import { ThemeProvider } from "@/app/context/ThemeContext";
 import { GeistSans } from "geist/font/sans";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
+        <WalletProvider>{children}</WalletProvider>
         <ToastProvider>{children}</ToastProvider>
     <html lang="en" suppressHydrationWarning>
       <head>
