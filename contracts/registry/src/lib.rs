@@ -180,6 +180,10 @@ mod tests {
         BytesN::from_array(env, &[1u8; 32])
     }
 
+    fn hash32_with_value(env: &Env, value: u8) -> BytesN<32> {
+        BytesN::from_array(env, &[value; 32])
+    }
+
     // --- #22 / #23 tests ---
 
     #[test]
@@ -193,21 +197,26 @@ mod tests {
     #[test]
     fn test_add_tee_hash_multiple_hashes() {
         let (env, _admin, client) = setup();
-        let h1 = BytesN::from_array(&env, &[1u8; 32]);
-        let h2 = BytesN::from_array(&env, &[2u8; 32]);
+        let h1 = hash32_with_value(&env, 1);
+        let h2 = hash32_with_value(&env, 2);
+        let h3 = hash32_with_value(&env, 3);
         client.add_tee_hash(&h1);
         client.add_tee_hash(&h2);
+        client.add_tee_hash(&h3);
         assert!(client.is_tee_hash_approved(&h1));
         assert!(client.is_tee_hash_approved(&h2));
+        assert!(client.is_tee_hash_approved(&h3));
     }
 
     #[test]
     fn test_add_tee_hash_no_admin_returns_unauthorized() {
         let env = Env::default();
-        env.mock_all_auths();
         let cid = env.register_contract(None, RegistryContract);
         let client = RegistryContractClient::new(&env, &cid);
-        // Not initialized — expect panic
+        let admin = Address::generate(&env);
+        let provenance = Address::generate(&env);
+        client.init(&admin, &provenance);
+
         let result = client.try_add_tee_hash(&BytesN::from_array(&env, &[0u8; 32]));
         assert!(result.is_err());
     }
@@ -215,11 +224,13 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_add_tee_hash_non_admin_panics() {
-        // Calling add_tee_hash on an uninitialised contract (no admin stored)
-        // without auth mocks causes a panic — satisfies the non-admin panic requirement.
-        let env = Env::default(); // no mock_all_auths
+        let env = Env::default();
         let cid = env.register_contract(None, RegistryContract);
         let client = RegistryContractClient::new(&env, &cid);
+        let admin = Address::generate(&env);
+        let provenance = Address::generate(&env);
+        client.init(&admin, &provenance);
+
         client.add_tee_hash(&BytesN::from_array(&env, &[0u8; 32]));
     }
 
