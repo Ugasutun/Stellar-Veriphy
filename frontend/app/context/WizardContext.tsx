@@ -1,22 +1,18 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback } from "react";
-import { ContentManifest } from "@stellarveriphy/shared/types";
+import type {
+  ManifestData,
+  SPVResult,
+} from "@/src/features/verification/types/wizard.types";
 
 interface WizardContextValue {
-  manifest: Partial<ContentManifest>;
-  setManifest: (manifest: Partial<ContentManifest>) => void;
+  manifest: ManifestData;
+  setManifest: (manifest: ManifestData) => void;
   encryptionEnabled: boolean;
   setEncryptionEnabled: (enabled: boolean) => void;
-  spvResult: {
-    certificateId?: string;
-    manifestHash?: string;
-    contentHash?: string;
-    attestationHash?: string;
-    transactionHash?: string;
-    success?: boolean;
-  };
-  setSPVResult: (result: any) => void;
+  spvResult: SPVResult;
+  setSPVResult: (result: SPVResult) => void;
   reset: () => void;
 }
 
@@ -31,9 +27,9 @@ const WizardContext = createContext<WizardContextValue>({
 });
 
 export function WizardProvider({ children }: { children: React.ReactNode }) {
-  const [manifest, setManifest] = useState<Partial<ContentManifest>>({});
+  const [manifest, setManifest] = useState<ManifestData>({});
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
-  const [spvResult, setSPVResult] = useState({});
+  const [spvResult, setSPVResult] = useState<SPVResult>({});
 
   const reset = useCallback(() => {
     setManifest({});

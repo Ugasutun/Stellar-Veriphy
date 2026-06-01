@@ -1,22 +1,29 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
+import type {
+  VerificationMode,
+  FileInfo,
+  ManifestData,
+} from "@/src/features/verification/types/wizard.types";
 
-export type VerificationMode = "standard" | "advanced";
+// Re-export so existing imports of VerificationMode from this file keep working.
+export type { VerificationMode };
 
 interface WizardContextValue {
   mode: VerificationMode | null;
   setMode: (mode: VerificationMode) => void;
   file: File | null;
   setFile: (file: File | null) => void;
+  fileInfo: FileInfo | null;
   contentHash: string;
   setContentHash: (hash: string) => void;
   advancedContentHash: string;
   setAdvancedContentHash: (hash: string) => void;
   advancedManifestHash: string;
   setAdvancedManifestHash: (hash: string) => void;
-  manifest: object | null;
-  setManifest: (manifest: object | null) => void;
+  manifest: ManifestData | null;
+  setManifest: (manifest: ManifestData | null) => void;
   manifestHash: string;
   setManifestHash: (hash: string) => void;
   hashProgress: number;
@@ -31,9 +38,14 @@ export function WizardProvider({ children }: { children: ReactNode }) {
   const [contentHash, setContentHash] = useState("");
   const [advancedContentHash, setAdvancedContentHash] = useState("");
   const [advancedManifestHash, setAdvancedManifestHash] = useState("");
-  const [manifest, setManifest] = useState<object | null>(null);
+  const [manifest, setManifest] = useState<ManifestData | null>(null);
   const [manifestHash, setManifestHash] = useState("");
   const [hashProgress, setHashProgress] = useState(0);
+
+  // Derive a serialisable FileInfo from the raw File object.
+  const fileInfo: FileInfo | null = file
+    ? { name: file.name, size: file.size, type: file.type }
+    : null;
 
   return (
     <WizardContext.Provider
@@ -42,6 +54,7 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         setMode,
         file,
         setFile,
+        fileInfo,
         contentHash,
         setContentHash,
         advancedContentHash,
