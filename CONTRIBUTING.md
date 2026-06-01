@@ -248,6 +248,9 @@ The project uses ESLint for TypeScript/JavaScript code:
 ```bash
 cd frontend
 pnpm lint
+
+# Or from root
+pnpm check:frontend
 ```
 
 ### Rust Formatting
@@ -274,6 +277,21 @@ To manually run pre-commit checks:
 ```bash
 pnpm prepare
 ```
+
+### Pre-commit Hooks
+
+This project uses Husky and lint-staged for pre-commit hooks. They will automatically run when you commit:
+
+- ESLint on staged frontend files
+- Rustfmt on staged Rust files
+
+To manually run pre-commit checks:
+
+```bash
+pnpm prepare
+```
+
+**Note**: The hooks are automatically installed when you run `pnpm install`.
 
 ---
 
@@ -334,6 +352,8 @@ Complete this checklist before submitting your pull request:
   - [ ] Branch is up to date with `main`
   - [ ] Commits are logical and well-described
   - [ ] No merge conflicts
+  - [ ] Pre-commit hooks pass (lint-staged)
+  - [ ] Pre-push hook passes (frontend build)
 
 ### Submitting the PR
 
