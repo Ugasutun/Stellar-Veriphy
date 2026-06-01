@@ -1,8 +1,8 @@
 "use client";
 
-import { WizardProvider, useWizard } from "@/context/WizardContext";
+import { useWizard } from "@/context/WizardContext";
 
-function ReviewContent() {
+export default function ReviewPage() {
   const {
     mode,
     file,
@@ -68,15 +68,5 @@ function ReviewContent() {
         Submit for Verification
       </button>
     </div>
-  );
-}
-
-export default function ReviewPage() {
-  return (
-    <WizardProvider>
-      <main className="max-w-2xl mx-auto py-12 px-4">
-        <ReviewContent />
-      </main>
-    </WizardProvider>
   );
 }
