@@ -1,157 +1,85 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useCallback,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 
-export interface WizardState {
-  file: File | null;
-  contentHash: string | null;
-  hashProgress: number;
-  isHashing: boolean;
-  manifest: Record<string, unknown> | null;
-  advancedContentHash: string | null;
-  advancedManifestHash: string | null;
-  encryptionEnabled: boolean;
-  spvResult: Record<string, unknown> | null;
-}
+export type WizardStep = "ModeSelection" | "MediaInput" | "ManifestStep" | "SPVOptions" | "SPVResults";
 
-export type WizardAction =
-  | { type: "SET_FILE"; payload: File | null }
-  | { type: "SET_CONTENT_HASH"; payload: string | null }
-  | { type: "SET_HASH_PROGRESS"; payload: number }
-  | { type: "SET_IS_HASHING"; payload: boolean }
-  | { type: "SET_MANIFEST"; payload: Record<string, unknown> | null }
-  | { type: "SET_ADVANCED_CONTENT_HASH"; payload: string | null }
-  | { type: "SET_ADVANCED_MANIFEST_HASH"; payload: string | null }
-  | { type: "SET_ENCRYPTION_ENABLED"; payload: boolean }
-  | { type: "SET_SPV_RESULT"; payload: Record<string, unknown> | null }
-  | { type: "RESET" };
-
-const initialState: WizardState = {
-  file: null,
-  contentHash: null,
-  hashProgress: 0,
-  isHashing: false,
-  manifest: null,
-  advancedContentHash: null,
-  advancedManifestHash: null,
-  encryptionEnabled: false,
-  spvResult: null,
-};
-
-function wizardReducer(state: WizardState, action: WizardAction): WizardState {
-  switch (action.type) {
-    case "SET_FILE":
-      return { ...state, file: action.payload };
-    case "SET_CONTENT_HASH":
-      return { ...state, contentHash: action.payload };
-    case "SET_HASH_PROGRESS":
-      return { ...state, hashProgress: action.payload };
-    case "SET_IS_HASHING":
-      return { ...state, isHashing: action.payload };
-    case "SET_MANIFEST":
-      return { ...state, manifest: action.payload };
-    case "SET_ADVANCED_CONTENT_HASH":
-      return { ...state, advancedContentHash: action.payload };
-    case "SET_ADVANCED_MANIFEST_HASH":
-      return { ...state, advancedManifestHash: action.payload };
-    case "SET_ENCRYPTION_ENABLED":
-      return { ...state, encryptionEnabled: action.payload };
-    case "SET_SPV_RESULT":
-      return { ...state, spvResult: action.payload };
-    case "RESET":
-      return initialState;
-    default:
-      return state;
-  }
-}
-
-interface WizardContextValue extends WizardState {
-  setFile: (file: File | null) => void;
-  setContentHash: (hash: string | null) => void;
-  setHashProgress: (progress: number) => void;
-  setIsHashing: (isHashing: boolean) => void;
-  setManifest: (manifest: Record<string, unknown> | null) => void;
-  setAdvancedContentHash: (hash: string | null) => void;
-  setAdvancedManifestHash: (hash: string | null) => void;
-  setEncryptionEnabled: (enabled: boolean) => void;
-  setSPVResult: (result: Record<string, unknown> | null) => void;
+interface WizardContextValue {
+  currentStep: number;
+  steps: WizardStep[];
+  goToStep: (step: number) => void;
+  nextStep: () => void;
+  prevStep: () => void;
   reset: () => void;
+  isStepComplete: (step: number) => boolean;
+  setStepComplete: (step: number, complete: boolean) => void;
 }
 
 const WizardContext = createContext<WizardContextValue | undefined>(undefined);
 
-export function WizardProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(wizardReducer, initialState);
+const STEPS: WizardStep[] = ["ModeSelection", "MediaInput", "ManifestStep", "SPVOptions", "SPVResults"];
 
-  const setFile = useCallback((file: File | null) => {
-    dispatch({ type: "SET_FILE", payload: file });
+export function WizardProvider({ children }: { children: React.ReactNode }) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  const goToStep = useCallback((step: number) => {
+    if (step >= 0 && step < STEPS.length) {
+      setCurrentStep(step);
+    }
   }, []);
 
-  const setContentHash = useCallback((hash: string | null) => {
-    dispatch({ type: "SET_CONTENT_HASH", payload: hash });
+  const nextStep = useCallback(() => {
+    setCurrentStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : prev));
   }, []);
 
-  const setHashProgress = useCallback((progress: number) => {
-    dispatch({ type: "SET_HASH_PROGRESS", payload: progress });
-  }, []);
-
-  const setIsHashing = useCallback((isHashing: boolean) => {
-    dispatch({ type: "SET_IS_HASHING", payload: isHashing });
-  }, []);
-
-  const setManifest = useCallback((manifest: Record<string, unknown> | null) => {
-    dispatch({ type: "SET_MANIFEST", payload: manifest });
-  }, []);
-
-  const setAdvancedContentHash = useCallback((hash: string | null) => {
-    dispatch({ type: "SET_ADVANCED_CONTENT_HASH", payload: hash });
-  }, []);
-
-  const setAdvancedManifestHash = useCallback((hash: string | null) => {
-    dispatch({ type: "SET_ADVANCED_MANIFEST_HASH", payload: hash });
-  }, []);
-
-  const setEncryptionEnabled = useCallback((enabled: boolean) => {
-    dispatch({ type: "SET_ENCRYPTION_ENABLED", payload: enabled });
-  }, []);
-
-  const setSPVResult = useCallback((result: Record<string, unknown> | null) => {
-    dispatch({ type: "SET_SPV_RESULT", payload: result });
+  const prevStep = useCallback(() => {
+    setCurrentStep((prev) => (prev > 0 ? prev - 1 : prev));
   }, []);
 
   const reset = useCallback(() => {
-    dispatch({ type: "RESET" });
+    setCurrentStep(0);
+    setCompletedSteps(new Set());
   }, []);
 
-  const value: WizardContextValue = {
-    ...state,
-    setFile,
-    setContentHash,
-    setHashProgress,
-    setIsHashing,
-    setManifest,
-    setAdvancedContentHash,
-    setAdvancedManifestHash,
-    setEncryptionEnabled,
-    setSPVResult,
-    reset,
-  };
+  const isStepComplete = useCallback((step: number) => {
+    return completedSteps.has(step);
+  }, [completedSteps]);
+
+  const setStepComplete = useCallback((step: number, complete: boolean) => {
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      if (complete) {
+        next.add(step);
+      } else {
+        next.delete(step);
+      }
+      return next;
+    });
+  }, []);
 
   return (
-    <WizardContext.Provider value={value}>{children}</WizardContext.Provider>
+    <WizardContext.Provider
+      value={{
+        currentStep,
+        steps: STEPS,
+        goToStep,
+        nextStep,
+        prevStep,
+        reset,
+        isStepComplete,
+        setStepComplete,
+      }}
+    >
+      {children}
+    </WizardContext.Provider>
   );
 }
 
-export function useWizard(): WizardContextValue {
+export const useWizard = () => {
   const context = useContext(WizardContext);
   if (!context) {
-    throw new Error("useWizard must be used within a WizardProvider");
+    throw new Error("useWizard must be used within WizardProvider");
   }
   return context;
-}
+};
