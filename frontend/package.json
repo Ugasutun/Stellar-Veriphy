@@ -29,8 +29,6 @@
     "eslint-config-next": "15.0.0",
     "jest": "29.7.0",
     "ts-jest": "29.2.6",
-    "typescript": "^5",
-    "tailwindcss": "^3"
     "tailwindcss": "^3",
     "typescript": "^5"
   }
