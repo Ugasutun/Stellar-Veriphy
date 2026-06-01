@@ -17,6 +17,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@stellarveriphy/shared/*": [
+        "../packages/shared/*"
       ]
     },
     "allowJs": true,
