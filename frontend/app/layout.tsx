@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { WalletProvider } from "@/components/WalletProvider";
-import { ToastProvider } from "@/components/ToastProvider";
+import { WalletProvider } from "@/context/WalletContext";
+import { ToastProvider } from "@/app/context/ToastContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -10,7 +10,6 @@ export const metadata: Metadata = {
   description: "Decentralized content verification on the Stellar blockchain",
 };
 
-// Prevents flash of unstyled content by applying the stored/preferred theme before paint
 const themeInitScript = `(function(){try{var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.classList.toggle('dark',t==='dark')}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
