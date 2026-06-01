@@ -13,6 +13,7 @@
   "dependencies": {
     "clsx": "2.1.1",
     "@stellar/freighter-api": "6.0.1",
+    "framer-motion": "^11.0.0",
     "geist": "^1.7.1",
     "next": "15.0.0",
     "react": "^18",
