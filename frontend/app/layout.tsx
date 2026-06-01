@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { WalletProvider } from "@/context/WalletContext";
-import { ToastProvider } from "@/app/context/ToastContext";
+import { WalletProvider } from "@/components/WalletProvider";
+import { ToastProvider } from "@/components/ToastProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";

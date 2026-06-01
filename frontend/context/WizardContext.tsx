@@ -1,74 +1,59 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
-export type WizardStep = "ModeSelection" | "MediaInput" | "ManifestStep" | "SPVOptions" | "SPVResults";
+export type VerificationMode = "standard" | "advanced";
 
 interface WizardContextValue {
-  currentStep: number;
-  steps: WizardStep[];
-  goToStep: (step: number) => void;
-  nextStep: () => void;
-  prevStep: () => void;
-  reset: () => void;
-  isStepComplete: (step: number) => boolean;
-  setStepComplete: (step: number, complete: boolean) => void;
+  mode: VerificationMode | null;
+  setMode: (mode: VerificationMode) => void;
+  file: File | null;
+  setFile: (file: File | null) => void;
+  contentHash: string;
+  setContentHash: (hash: string) => void;
+  advancedContentHash: string;
+  setAdvancedContentHash: (hash: string) => void;
+  advancedManifestHash: string;
+  setAdvancedManifestHash: (hash: string) => void;
+  manifest: object | null;
+  setManifest: (manifest: object | null) => void;
+  manifestHash: string;
+  setManifestHash: (hash: string) => void;
+  hashProgress: number;
+  setHashProgress: (progress: number) => void;
 }
 
 const WizardContext = createContext<WizardContextValue | undefined>(undefined);
 
-const STEPS: WizardStep[] = ["ModeSelection", "MediaInput", "ManifestStep", "SPVOptions", "SPVResults"];
-
-export function WizardProvider({ children }: { children: React.ReactNode }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-
-  const goToStep = useCallback((step: number) => {
-    if (step >= 0 && step < STEPS.length) {
-      setCurrentStep(step);
-    }
-  }, []);
-
-  const nextStep = useCallback(() => {
-    setCurrentStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : prev));
-  }, []);
-
-  const prevStep = useCallback(() => {
-    setCurrentStep((prev) => (prev > 0 ? prev - 1 : prev));
-  }, []);
-
-  const reset = useCallback(() => {
-    setCurrentStep(0);
-    setCompletedSteps(new Set());
-  }, []);
-
-  const isStepComplete = useCallback((step: number) => {
-    return completedSteps.has(step);
-  }, [completedSteps]);
-
-  const setStepComplete = useCallback((step: number, complete: boolean) => {
-    setCompletedSteps((prev) => {
-      const next = new Set(prev);
-      if (complete) {
-        next.add(step);
-      } else {
-        next.delete(step);
-      }
-      return next;
-    });
-  }, []);
+export function WizardProvider({ children }: { children: ReactNode }) {
+  const [mode, setMode] = useState<VerificationMode | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [contentHash, setContentHash] = useState("");
+  const [advancedContentHash, setAdvancedContentHash] = useState("");
+  const [advancedManifestHash, setAdvancedManifestHash] = useState("");
+  const [manifest, setManifest] = useState<object | null>(null);
+  const [manifestHash, setManifestHash] = useState("");
+  const [hashProgress, setHashProgress] = useState(0);
 
   return (
     <WizardContext.Provider
       value={{
-        currentStep,
-        steps: STEPS,
-        goToStep,
-        nextStep,
-        prevStep,
-        reset,
-        isStepComplete,
-        setStepComplete,
+        mode,
+        setMode,
+        file,
+        setFile,
+        contentHash,
+        setContentHash,
+        advancedContentHash,
+        setAdvancedContentHash,
+        advancedManifestHash,
+        setAdvancedManifestHash,
+        manifest,
+        setManifest,
+        manifestHash,
+        setManifestHash,
+        hashProgress,
+        setHashProgress,
       }}
     >
       {children}
@@ -76,10 +61,10 @@ export function WizardProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useWizard = () => {
+export function useWizard() {
   const context = useContext(WizardContext);
   if (!context) {
     throw new Error("useWizard must be used within WizardProvider");
   }
   return context;
-};
+}
