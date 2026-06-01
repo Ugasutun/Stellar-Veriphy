@@ -1,9 +1,9 @@
 "use client";
 
-import { WizardProvider, useWizard } from "@/context/WizardContext";
+import { useWizard } from "@/context/WizardContext";
 import { MediaInput, AdvancedInput } from "@/features/verification/components/steps";
 
-function MediaInputContent() {
+export default function MediaInputPage() {
   const { mode } = useWizard();
 
   if (mode === "advanced") {
@@ -11,14 +11,4 @@ function MediaInputContent() {
   }
 
   return <MediaInput />;
-}
-
-export default function MediaInputPage() {
-  return (
-    <WizardProvider>
-      <main className="max-w-2xl mx-auto py-12 px-4">
-        <MediaInputContent />
-      </main>
-    </WizardProvider>
-  );
 }
